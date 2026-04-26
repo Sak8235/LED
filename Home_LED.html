@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LED Control Panel (Secure)</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f2f5; }
+        .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 300px; }
+        h1 { color: #333; margin-bottom: 1.5rem; }
+        .status { margin-bottom: 1rem; font-weight: bold; color: #555; }
+        .btn { border: none; padding: 15px 40px; font-size: 18px; border-radius: 10px; cursor: pointer; transition: 0.3s; width: 100%; margin: 10px 0; font-weight: bold; }
+        .btn-on { background-color: #28a745; color: white; }
+        .btn-on:hover { background-color: #218838; }
+        .btn-off { background-color: #dc3545; color: white; }
+        .btn-off:hover { background-color: #c82333; }
+        #status-display { color: #007bff; }
+        .logout-link { font-size: 12px; color: #888; cursor: pointer; text-decoration: underline; margin-top: 10px; display: block; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>LED Project</h1>
+    <div class="status">Status: <span id="status-display">กำลังโหลด...</span></div>
+    
+    <button class="btn btn-on" onclick="sendData(1)">ON</button>
+    <button class="btn btn-off" onclick="sendData(0)">OFF</button>
+    <span class="logout-link" onclick="logout()">ออกจากระบบ (Clear Session)</span>
+</div>
+
+<script>
+    const dbURL = "https://esp32-5b507-default-rtdb.asia-southeast1.firebasedatabase.app/Pum.json"; //
+    const auth = "nwj4fcfGjchTyzM9sgGkLyw4t49oFNfga4q9Lfhu"; //
+    const MY_PASSWORD = "1234"; // เปลี่ยนรหัสผ่านตรงนี้ได้เลยครับ
+
+    function checkLogin() {
+        if (sessionStorage.getItem("isLoggedIn") === "true") {
+            return true;
+        }
+        let pass = prompt("กรุณาใส่รหัสผ่านเพื่อเข้าใช้งาน:");
+        if (pass === MY_PASSWORD) {
+            sessionStorage.setItem("isLoggedIn", "true");
+            return true;
+        } else {
+            alert("รหัสผ่านไม่ถูกต้อง!");
+            return false;
+        }
+    }
+
+    function sendData(value) {
+        if (!checkLogin()) return; // ตรวจสอบรหัสผ่านก่อนส่งข้อมูล
+
+        const url = `${dbURL}?auth=${auth}`;
+        fetch(url, {
+            method: 'PUT',
+            body: JSON.stringify(value),
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => {
+            if (response.ok) {
+                document.getElementById('status-display').innerText = (value === 1) ? "ON" : "OFF";
+            } else {
+                alert("เกิดข้อผิดพลาดในการส่งข้อมูล");
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    function getStatus() {
+        fetch(`${dbURL}?auth=${auth}`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('status-display').innerText = (data === 1) ? "เปิด (1)" : "ปิด (0)";
+        });
+    }
+
+    function logout() {
+        sessionStorage.removeItem("isLoggedIn");
+        alert("ออกจากระบบแล้ว");
+        location.reload();
+    }
+
+    getStatus();
+</script>
+</body>
+</html>
